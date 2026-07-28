@@ -36,9 +36,9 @@ export class WhatsAppMessagingService implements IMessagingService {
         }
       );
 
-      console.log("=========== META RESPONSE ===========");
-      console.log(JSON.stringify(response.data, null, 2));
-      console.log("=====================================");
+      logger.info("=========== META RESPONSE ===========");
+      logger.info(JSON.stringify(response.data, null, 2));
+      logger.info("=====================================");
 
       logger.info("build 123456");
 
@@ -63,7 +63,7 @@ export class WhatsAppMessagingService implements IMessagingService {
     const payload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
-      to: cleanPhone,
+      to: to.replace("+", ""),
       type: "text",
       text: {
         preview_url: false,
