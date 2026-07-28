@@ -40,7 +40,7 @@ export class WhatsAppMessagingService implements IMessagingService {
       console.log(JSON.stringify(response.data, null, 2));
       console.log("=====================================");
 
-      logger.info("WhatsApp message sent successfully");
+      logger.info("build 123456");
 
       return response.status === 200 || response.status === 201;
     } catch (error: any) {
