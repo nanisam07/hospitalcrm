@@ -16,7 +16,12 @@ export class WhatsAppMessagingService implements IMessagingService {
   private async makeApiCall(
     endpoint: string,
     payload: any
-  ): Promise<boolean> {
+  ): 
+  
+  Promise<boolean> {
+    logger.info("############################");
+    logger.info("SAMUEL BUILD 999999");
+    logger.info("############################");
     try {
       console.log("========================================");
       console.log("Calling Meta WhatsApp API...");
