@@ -88,7 +88,25 @@ export class WebhookController {
         const msg = value?.messages?.[0];
 
         if (!msg) {
-          logger.info('Received status update only.');
+          const statuses = value?.statuses;
+          if (statuses && statuses.length > 0) {
+            logger.info('========= WHATSAPP STATUS UPDATE =========');
+            logger.info(JSON.stringify(statuses, null, 2));
+            
+            statuses.forEach((s: any) => {
+              if (s.errors && s.errors.length > 0) {
+                logger.error(`❌ Delivery failed for Message ID: ${s.id}`);
+                logger.error(`Recipient: ${s.recipient_id} | Status: ${s.status}`);
+                logger.error(`Errors: ${JSON.stringify(s.errors, null, 2)}`);
+              } else {
+                logger.info(`ℹ️ Message ID: ${s.id} status changed to [${s.status.toUpperCase()}] for recipient: ${s.recipient_id}`);
+              }
+            });
+            logger.info('==========================================');
+          } else {
+            logger.info('Received status update only.');
+          }
+
           res.status(200).json({
             success: true,
             message: 'Status update acknowledged',
