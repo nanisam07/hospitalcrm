@@ -28,6 +28,12 @@ export class WebhookController {
         process.env.WHATSAPP_VERIFY_TOKEN || 'mock-verify-token';
 
       logger.info('Webhook verification request received');
+      logger.info('===== VERIFY REQUEST =====');
+logger.info(JSON.stringify(req.query, null, 2));
+logger.info(`Mode: ${mode}`);
+logger.info(`Token: ${token}`);
+logger.info(`Challenge: ${challenge}`);
+logger.info('==========================');
 
       if (mode && token) {
         if (
