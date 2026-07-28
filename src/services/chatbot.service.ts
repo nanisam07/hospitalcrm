@@ -290,8 +290,15 @@ export class ChatbotService {
     }
 
     // Send the bot response using MessagingService
-    const messagingService = MessagingServiceFactory.getService();
-    await messagingService.sendText(phone, responseMessage);
+    logger.info("STEP 1");
+
+const messagingService = MessagingServiceFactory.getService();
+
+logger.info("STEP 2");
+
+await messagingService.sendText(phone, responseMessage);
+
+logger.info("STEP 3");
 
     // Save BOT message to Conversation history
     if (patient && session.step !== 'AWAITING_LOCATION') {
