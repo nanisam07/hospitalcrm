@@ -1,0 +1,136 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  ADMIN
+  RECEPTIONIST
+}
+
+enum AppointmentStatus {
+  PENDING
+  ASSIGNED
+  CONFIRMED
+  CHECKED_IN
+  CONSULTATION_STARTED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum SenderType {
+  PATIENT
+  DOCTOR
+  SYSTEM
+  BOT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  DOCUMENT
+  LOCATION
+}
+
+enum DeliveryStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Patient {
+  id            String         @id @default(uuid())
+  fullName      String
+  phone         String         @unique
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  appointments  Appointment[]
+  conversations Conversation[]
+}
+
+model Doctor {
+  id            String        @id @default(uuid())
+  name          String
+  department    String
+  specialization String
+  availableDays String[]      // e.g. ["Monday", "Wednesday", "Friday"]
+  availableTime String        // e.g. "09:00 - 17:00"
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  appointments  Appointment[]
+}
+
+model Appointment {
+  id            String            @id @default(uuid())
+  patientId     String
+  patient       Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String?
+  doctor        Doctor?           @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  department    String
+  reason        String
+  preferredDate DateTime
+  preferredTime String
+  status        AppointmentStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+}
+
+model Conversation {
+  id             String         @id @default(uuid())
+  patientId      String
+  patient        Patient        @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  message        String
+  sender         SenderType
+  messageType    MessageType    @default(TEXT)
+  deliveryStatus DeliveryStatus @default(SENT)
+  timestamp      DateTime       @default(now())
+}
+
+model ChatSession {
+  id           String   @id @default(uuid())
+  patientPhone String   @unique
+  step         String   // START, AWAITING_NAME, AWAITING_DEPARTMENT, AWAITING_REASON, AWAITING_DATE, AWAITING_TIME, AWAITING_ADDRESS, AWAITING_LOCATION
+  data         Json     // Stores temporary details: { fullName, department, reason, preferredDate, preferredTime, address, latitude, longitude }
+  updatedAt    DateTime @updatedAt
+}
+
+model HospitalSettings {
+  id              Int      @id @default(1)
+  hospitalName    String
+  phone           String
+  emergencyNumber String
+  email           String
+  address         String
+  googleMapsLink  String
+  openingTime     String
+  closingTime     String
+  updatedAt       DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  actor     String   // email, user ID, "SYSTEM", or "BOT"
+  actorRole String   // ADMIN, RECEPTIONIST, SYSTEM, BOT
+  action    String   // e.g. "Admin Login", "Patient Created", "Doctor Assigned"
+  details   String   // JSON string or summary description
+  timestamp DateTime @default(now())
+}

@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hospital_crm_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hospital_crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    container_name: hospital_crm_backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/hospital_crm?schema=public
+      - PORT=5000
+      - NODE_ENV=production
+      - JWT_SECRET=supersecretkeyhospitalcrm123!
+      - JWT_EXPIRES_IN=7d
+      - MESSAGE_PROVIDER=mock
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
