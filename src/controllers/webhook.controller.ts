@@ -11,68 +11,95 @@ export class WebhookController {
     this.chatbotService = new ChatbotService();
   }
 
-  // GET: Validate WhatsApp Webhook (Meta Verification)
-  verify = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // ==========================
+  // VERIFY WEBHOOK
+  // ==========================
+  verify = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
     try {
       const mode = req.query['hub.mode'];
       const token = req.query['hub.verify_token'];
       const challenge = req.query['hub.challenge'];
 
-      const configuredVerifyToken = process.env.WHATSAPP_VERIFY_TOKEN || 'mock-verify-token';
+      const configuredVerifyToken =
+        process.env.WHATSAPP_VERIFY_TOKEN || 'mock-verify-token';
+
+      logger.info('Webhook verification request received');
 
       if (mode && token) {
-        if (mode === 'subscribe' && token === configuredVerifyToken) {
-          logger.info('WhatsApp webhook successfully verified.');
+        if (
+          mode === 'subscribe' &&
+          token === configuredVerifyToken
+        ) {
+          logger.info('WhatsApp webhook verified successfully.');
           res.status(200).send(challenge);
           return;
-        } else {
-          logger.warn('WhatsApp webhook verification failed. Token mismatch.');
-          res.status(403).json({ success: false, message: 'Verification failed' });
-          return;
         }
+
+        logger.warn('Webhook verification failed.');
+        res.status(403).json({
+          success: false,
+          message: 'Verification failed',
+        });
+        return;
       }
-      res.status(400).json({ success: false, message: 'Invalid query parameters' });
-      return;
+
+      res.status(400).json({
+        success: false,
+        message: 'Invalid query parameters',
+      });
     } catch (error) {
       next(error);
     }
   };
 
-  // POST: Receive Simulated or Real incoming WhatsApp message
-  receive = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  // ==========================
+  // RECEIVE WHATSAPP MESSAGE
+  // ==========================
+  receive = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> => {
+    try {
+      logger.info('==============================');
+      logger.info('WHATSAPP WEBHOOK RECEIVED');
+      logger.info(JSON.stringify(req.body, null, 2));
+      logger.info('==============================');
 
-  console.log("======================================");
-  console.log("🔥 WHATSAPP WEBHOOK RECEIVED");
-  console.log(JSON.stringify(req.body, null, 2));
-  console.log("======================================");
-
-  try {
-      // 1. Meta Webhook formats vs simulation payloads
-      // If it is a real webhook from Meta, it comes as nested object structure:
-      // entry[0].changes[0].value.messages[0]
       let phone = '';
       let message = '';
       let messageType = 'TEXT';
       let latitude: number | undefined;
       let longitude: number | undefined;
 
-      const isMetaWebhook = req.body.object === 'whatsapp_business_account';
+      const isMetaWebhook =
+        req.body.object === 'whatsapp_business_account';
+
+      logger.info(`Is Meta Webhook: ${isMetaWebhook}`);
 
       if (isMetaWebhook) {
-        logger.info('Received WhatsApp message from Meta Cloud API webhook.');
         const entry = req.body.entry?.[0];
         const change = entry?.changes?.[0];
         const value = change?.value;
         const msg = value?.messages?.[0];
 
         if (!msg) {
-          // If message status update payload, just acknowledge
-          res.status(200).json({ success: true, message: 'Status update acknowledged' });
+          logger.info('Received status update only.');
+          res.status(200).json({
+            success: true,
+            message: 'Status update acknowledged',
+          });
           return;
         }
 
-        phone = '+' + msg.from; // Meta sends without + symbol prefix
-        messageType = msg.type ? msg.type.toUpperCase() : 'TEXT';
+        phone = '+' + msg.from;
+        messageType = msg.type
+          ? msg.type.toUpperCase()
+          : 'TEXT';
 
         if (msg.type === 'text') {
           message = msg.text?.body || '';
@@ -84,8 +111,8 @@ export class WebhookController {
           message = `Shared a ${msg.type}`;
         }
       } else {
-        // Fallback to our REST simulation JSON payload
         const validated = webhookMessageSchema.parse(req.body);
+
         phone = validated.phone;
         message = validated.message;
         messageType = validated.messageType;
@@ -93,22 +120,39 @@ export class WebhookController {
         longitude = validated.longitude;
       }
 
-      // Handle message in Chatbot State Machine
-      const botResponse = await this.chatbotService.handleIncomingMessage(
-        phone,
-        message,
-        messageType as any,
-        latitude && longitude ? { latitude, longitude } : undefined
-      );
+      logger.info(`Phone: ${phone}`);
+      logger.info(`Message: ${message}`);
+      logger.info(`Type: ${messageType}`);
+
+      logger.info('Calling ChatbotService...');
+
+      const botResponse =
+        await this.chatbotService.handleIncomingMessage(
+          phone,
+          message,
+          messageType as any,
+          latitude && longitude
+            ? {
+                latitude,
+                longitude,
+              }
+            : undefined
+        );
+
+      logger.info('Chatbot Response:');
+      logger.info(botResponse);
 
       ApiResponse.success(
         res,
         { botResponse },
-        'Message received and processed by chatbot'
+        'Message processed successfully'
       );
-    } catch (error) {
+    } catch (error: any) {
+      logger.error('Webhook Error');
+      logger.error(error);
       next(error);
     }
   };
 }
+
 export default WebhookController;
