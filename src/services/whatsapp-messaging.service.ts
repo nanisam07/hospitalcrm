@@ -31,21 +31,37 @@ export class WhatsAppMessagingService implements IMessagingService {
     logger.info("WhatsApp message sent successfully");
     return response.status === 200 || response.status === 201;
   } catch (error: any) {
-    logger.error(error.response?.data || error.message);
-    return false;
-  }
+  console.log("========== WHATSAPP ERROR ==========");
+  console.log("Status:", error.response?.status);
+  console.log("Data:", JSON.stringify(error.response?.data, null, 2));
+  console.log("Message:", error.message);
+  console.log("====================================");
+
+  return false;
+}
 }
 
   async sendText(to: string, text: string): Promise<boolean> {
-    const payload = {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to,
-      type: 'text',
-      text: { preview_url: false, body: text },
-    };
-    return this.makeApiCall('messages', payload);
-  }
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'text',
+    text: {
+      preview_url: false,
+      body: text,
+    },
+  };
+
+  console.log("================================");
+  console.log("Sending WhatsApp reply...");
+  console.log("To:", to);
+  console.log("Message:", text);
+  console.log(JSON.stringify(payload, null, 2));
+  console.log("================================");
+
+  return this.makeApiCall('messages', payload);
+}
 
   async sendTemplate(to: string, templateName: string, languageCode: string, components?: any[]): Promise<boolean> {
     const payload = {
@@ -75,6 +91,7 @@ export class WhatsAppMessagingService implements IMessagingService {
         address: address || 'Details',
       },
     };
+    
     return this.makeApiCall('messages', payload);
   }
 
