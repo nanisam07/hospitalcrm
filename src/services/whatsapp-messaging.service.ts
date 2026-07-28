@@ -1,4 +1,7 @@
+
+import axios from "axios";
 import { IMessagingService } from '../interfaces/messaging.interface';
+
 import logger from '../config/logger';
 
 export class WhatsAppMessagingService implements IMessagingService {
@@ -13,27 +16,25 @@ export class WhatsAppMessagingService implements IMessagingService {
   }
 
   private async makeApiCall(endpoint: string, payload: any): Promise<boolean> {
-    logger.info(
-      `[WHATSAPP MESSAGE INITIATED] [API Calling: https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}] | Token Length: ${this.accessToken.length}`
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}`,
+      payload,
+      {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
-    logger.debug(`[WHATSAPP MESSAGE PAYLOAD]: ${JSON.stringify(payload)}`);
 
-    // In a real implementation:
-    // try {
-    //   const response = await axios.post(
-    //     `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}`,
-    //     payload,
-    //     { headers: { Authorization: `Bearer ${this.accessToken}`, 'Content-Type': 'application/json' } }
-    //   );
-    //   return response.status === 200 || response.status === 201;
-    // } catch (error) {
-    //   logger.error(`[WHATSAPP MESSAGE ERROR]: ${error}`);
-    //   return false;
-    // }
-
-    logger.info('[WHATSAPP MESSAGE MOCKED SUCCESS] Credentials not live, logged successfully.');
-    return true;
+    logger.info("WhatsApp message sent successfully");
+    return response.status === 200 || response.status === 201;
+  } catch (error: any) {
+    logger.error(error.response?.data || error.message);
+    return false;
   }
+}
 
   async sendText(to: string, text: string): Promise<boolean> {
     const payload = {
