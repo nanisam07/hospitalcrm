@@ -40,7 +40,13 @@ export class WebhookController {
 
   // POST: Receive Simulated or Real incoming WhatsApp message
   receive = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
+
+  console.log("======================================");
+  console.log("🔥 WHATSAPP WEBHOOK RECEIVED");
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log("======================================");
+
+  try {
       // 1. Meta Webhook formats vs simulation payloads
       // If it is a real webhook from Meta, it comes as nested object structure:
       // entry[0].changes[0].value.messages[0]
