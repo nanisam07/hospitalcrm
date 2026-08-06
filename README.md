@@ -247,3 +247,4 @@ The backend uses **Socket.IO** to feed the dashboard in real time.
 - `delete_appointment`: Fired when a booking is deleted.
 - `new_message`: Fired when a patient or bot logs a chat message, synchronizing the WhatsApp Inbox console real-time.
 # hospitalcrm
+# linelekuda-web
