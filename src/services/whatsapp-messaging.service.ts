@@ -16,49 +16,33 @@ export class WhatsAppMessagingService implements IMessagingService {
   private async makeApiCall(
     endpoint: string,
     payload: any
-  ): 
-  
-  Promise<boolean> {
-    logger.info("############################");
-    logger.info("SAMUEL BUILD 999999");
-    logger.info("############################");
+  ): Promise<boolean> {
+    const url = `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}`;
+    logger.info(`Meta Request URL: ${url}`);
+    logger.info(`Meta Payload: ${JSON.stringify(payload, null, 2)}`);
+
     try {
-      console.log("========================================");
-      console.log("Calling Meta WhatsApp API...");
-      console.log(
-        `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}`
-      );
-      console.log("========================================");
+      const response = await axios.post(url, payload, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-      const response = await axios.post(
-        `https://graph.facebook.com/${this.apiVersion}/${this.phoneNumberId}/${endpoint}`,
-        payload,
-        {
-          headers: {
-            Authorization: `Bearer ${this.accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      logger.info("=========== META RESPONSE ===========");
-      logger.info(JSON.stringify(response.data, null, 2));
-      logger.info("=====================================");
-
-      logger.info("build 123456");
-
+      logger.info(`Meta Response: ${JSON.stringify(response.data, null, 2)}`);
       return response.status === 200 || response.status === 201;
     } catch (error: any) {
-      console.log("========== WHATSAPP ERROR ==========");
-      console.log("Status:", error.response?.status);
-      console.log(
-        "Data:",
-        JSON.stringify(error.response?.data, null, 2)
-      );
-      console.log("Message:", error.message);
-      console.log("====================================");
+      const status = error.response?.status || 500;
+      const errorData = error.response?.data || { message: error.message };
 
-      return false;
+      logger.error(`Meta Error [Status ${status}]: ${JSON.stringify(errorData, null, 2)}`);
+      logger.error(error.stack || error);
+
+      const metaMsg = errorData?.error?.message || error.message || "Meta API request failed";
+      const err: any = new Error(`Meta WhatsApp API Error [${status}]: ${metaMsg}`);
+      err.status = status;
+      err.metaData = errorData;
+      throw err;
     }
   }
 
@@ -68,7 +52,7 @@ export class WhatsAppMessagingService implements IMessagingService {
     const payload = {
       messaging_product: "whatsapp",
       recipient_type: "individual",
-      to: to.replace("+", ""),
+      to: cleanPhone,
       type: "text",
       text: {
         preview_url: false,

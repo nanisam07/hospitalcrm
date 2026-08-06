@@ -45,7 +45,7 @@ export class ConversationController {
     }
   };
 
-  sendMessage = async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
+  sendMessage = async (req: AuthenticatedRequest, res: Response, _next: NextFunction): Promise<void> => {
     try {
       const { patientId, message, messageType } = sendMessageSchema.parse(req.body);
       const actorId = req.user?.id || 'SYSTEM';
@@ -59,8 +59,10 @@ export class ConversationController {
       );
 
       ApiResponse.success(res, result, 'Message sent successfully', 201);
-    } catch (error) {
-      next(error);
+    } catch (error: any) {
+      const status = error.status || 400;
+      const message = error.message || 'Failed to send WhatsApp message';
+      ApiResponse.error(res, message, status, error.metaData || null);
     }
   };
 }

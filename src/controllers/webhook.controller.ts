@@ -1,14 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { ChatbotService } from '../services/chatbot.service';
+import { ConversationService } from '../services/conversation.service';
 import { webhookMessageSchema } from '../validators/webhook.validator';
 import { ApiResponse } from '../utils/api-response';
 import logger from '../config/logger';
 
 export class WebhookController {
   private chatbotService: ChatbotService;
+  private conversationService: ConversationService;
 
   constructor() {
     this.chatbotService = new ChatbotService();
+    this.conversationService = new ConversationService();
   }
 
   // ==========================
@@ -148,29 +151,57 @@ logger.info('==========================');
       logger.info(`Message: ${message}`);
       logger.info(`Type: ${messageType}`);
 
-      logger.info('Calling ChatbotService...');
+      // ================================================================
+      // CHATBOT_ENABLED FEATURE FLAG
+      // Set CHATBOT_ENABLED=false in .env to disable automatic replies.
+      // Incoming messages are always stored. Receptionists reply manually.
+      // ================================================================
+      const chatbotEnabled = process.env.CHATBOT_ENABLED !== 'false';
+      logger.info(`CHATBOT_ENABLED: ${chatbotEnabled}`);
 
-      const botResponse =
-        await this.chatbotService.handleIncomingMessage(
+      if (chatbotEnabled) {
+        // ---- CHATBOT PATH (existing behavior, unchanged) ----
+        logger.info('Calling ChatbotService...');
+
+        const botResponse =
+          await this.chatbotService.handleIncomingMessage(
+            phone,
+            message,
+            messageType as any,
+            latitude && longitude
+              ? {
+                  latitude,
+                  longitude,
+                }
+              : undefined
+          );
+
+        logger.info('Chatbot Response:');
+        logger.info(botResponse);
+
+        ApiResponse.success(
+          res,
+          { botResponse },
+          'Message processed successfully'
+        );
+      } else {
+        // ---- CHATBOT DISABLED PATH ----
+        // Store the incoming message and notify dashboard via Socket.IO.
+        // No automatic reply is sent. Receptionists handle this manually.
+        logger.info('[CHATBOT_DISABLED] Storing incoming message without chatbot reply...');
+
+        await this.conversationService.storeIncomingMessage(
           phone,
           message,
-          messageType as any,
-          latitude && longitude
-            ? {
-                latitude,
-                longitude,
-              }
-            : undefined
+          messageType as any
         );
 
-      logger.info('Chatbot Response:');
-      logger.info(botResponse);
-
-      ApiResponse.success(
-        res,
-        { botResponse },
-        'Message processed successfully'
-      );
+        ApiResponse.success(
+          res,
+          { chatbotEnabled: false },
+          'Message stored. Awaiting manual receptionist reply.'
+        );
+      }
     } catch (error: any) {
       logger.error('Webhook Error');
       logger.error(error);
