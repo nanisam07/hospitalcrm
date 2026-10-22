@@ -4,7 +4,7 @@
   "description": "Enterprise-grade Hospital WhatsApp CRM Backend & Admin System",
   "main": "dist/server.js",
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "tsc",
     "start": "node dist/server.js",
     "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
     "prisma:generate": "prisma generate",
